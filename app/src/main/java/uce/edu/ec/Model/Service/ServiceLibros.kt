@@ -31,4 +31,8 @@ class ServiceLibros : IreLibros {
     override fun obtenerLibroPorId(id: Int): Libros? {
         return LibrosData.libros.find { it.id == id }
     }
+
+    override fun obtenerTodos(): List<Libros> {
+        return LibrosData.libros.toList()
+    }
 }

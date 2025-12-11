@@ -7,16 +7,20 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
-import uce.edu.ec.Model.Entity.Usuario
 import uce.edu.ec.Model.Service.ServiceUsuario
 
 @Composable
 fun LoginUser(
     modifier: Modifier = Modifier,
-    onLoginClick: (String, String) -> Unit = { _, _ -> }
+    onLoginClick: (String, String) -> Unit = { _, _ -> },
+    onRegisterClick: () -> Unit = {}
 ) {
     var username by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+    var isError by remember { mutableStateOf(false) }
+    
+    // Instancia del servicio para validar (se mantiene entre recomposiciones)
+    val serviceUsuario = remember { ServiceUsuario() }
 
     Column(
         modifier = modifier
@@ -34,9 +38,13 @@ fun LoginUser(
 
         OutlinedTextField(
             value = username,
-            onValueChange = { username = it },
+            onValueChange = { 
+                username = it
+                isError = false // Limpiar error al escribir
+            },
             label = { Text("Usuario") },
             singleLine = true,
+            isError = isError,
             modifier = Modifier.fillMaxWidth()
         )
 
@@ -44,20 +52,47 @@ fun LoginUser(
 
         OutlinedTextField(
             value = password,
-            onValueChange = { password = it },
+            onValueChange = { 
+                password = it
+                isError = false // Limpiar error al escribir
+            },
             label = { Text("Contraseña") },
             visualTransformation = PasswordVisualTransformation(),
             singleLine = true,
+            isError = isError,
             modifier = Modifier.fillMaxWidth()
         )
+
+        if (isError) {
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "Usuario o contraseña incorrectos",
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodyMedium
+            )
+        }
 
         Spacer(modifier = Modifier.height(32.dp))
 
         Button(
-            onClick = { onLoginClick(username, password) },
+            onClick = { 
+                // Lógica de validación
+                val usuarioEncontrado = serviceUsuario.obtenerUsuarioPorNombreUsuario(username)
+                if (usuarioEncontrado != null && usuarioEncontrado.password == password) {
+                    onLoginClick(username, password)
+                } else {
+                    isError = true
+                }
+            },
             modifier = Modifier.fillMaxWidth()
         ) {
             Text("Iniciar Sesión")
+        }
+        
+        Spacer(modifier = Modifier.height(16.dp))
+        
+        TextButton(onClick = onRegisterClick) {
+            Text("¿No tienes cuenta? Regístrate")
         }
     }
 }

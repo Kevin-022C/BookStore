@@ -7,5 +7,5 @@ interface IreLibros {
     fun update(libros: Libros): Libros
     fun delete(libros: Libros)
     fun obtenerLibroPorId(id: Int): Libros?
-
+    fun obtenerTodos(): List<Libros>
 }
