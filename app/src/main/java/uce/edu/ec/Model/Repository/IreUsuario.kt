@@ -8,5 +8,5 @@ interface IreUsuario {
     fun delete(usuario: Usuario)
     fun obtenerUsuarioPorId(id: Int): Usuario?
     fun obtenerUsuarioPorNombreUsuario(nombreUsuario: String): Usuario?
-
+    fun obtenerUsuarioPorNombreYApellido(nombre: String, apellido: String): Usuario?
 }

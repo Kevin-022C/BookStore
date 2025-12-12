@@ -5,7 +5,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import uce.edu.ec.Model.Service.ServiceUsuario
 
@@ -15,8 +14,8 @@ fun LoginUser(
     onLoginClick: (String, String) -> Unit = { _, _ -> },
     onRegisterClick: () -> Unit = {}
 ) {
-    var username by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
+    var nombre by remember { mutableStateOf("") }
+    var apellido by remember { mutableStateOf("") }
     var isError by remember { mutableStateOf(false) }
     
     // Instancia del servicio para validar (se mantiene entre recomposiciones)
@@ -37,12 +36,12 @@ fun LoginUser(
         Spacer(modifier = Modifier.height(32.dp))
 
         OutlinedTextField(
-            value = username,
+            value = nombre,
             onValueChange = { 
-                username = it
+                nombre = it
                 isError = false // Limpiar error al escribir
             },
-            label = { Text("Usuario") },
+            label = { Text("Nombre") },
             singleLine = true,
             isError = isError,
             modifier = Modifier.fillMaxWidth()
@@ -51,13 +50,13 @@ fun LoginUser(
         Spacer(modifier = Modifier.height(16.dp))
 
         OutlinedTextField(
-            value = password,
+            value = apellido,
             onValueChange = { 
-                password = it
+                apellido = it
                 isError = false // Limpiar error al escribir
             },
-            label = { Text("Contraseña") },
-            visualTransformation = PasswordVisualTransformation(),
+            label = { Text("Apellido") },
+            // Quitamos la PasswordVisualTransformation para ver el texto
             singleLine = true,
             isError = isError,
             modifier = Modifier.fillMaxWidth()
@@ -66,7 +65,7 @@ fun LoginUser(
         if (isError) {
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = "Usuario o contraseña incorrectos",
+                text = "Nombre o Apellido incorrectos",
                 color = MaterialTheme.colorScheme.error,
                 style = MaterialTheme.typography.bodyMedium
             )
@@ -76,10 +75,11 @@ fun LoginUser(
 
         Button(
             onClick = { 
-                // Lógica de validación
-                val usuarioEncontrado = serviceUsuario.obtenerUsuarioPorNombreUsuario(username)
-                if (usuarioEncontrado != null && usuarioEncontrado.password == password) {
-                    onLoginClick(username, password)
+                // Lógica de validación por Nombre y Apellido
+                val usuarioEncontrado = serviceUsuario.obtenerUsuarioPorNombreYApellido(nombre, apellido)
+                
+                if (usuarioEncontrado != null) {
+                    onLoginClick(nombre, apellido)
                 } else {
                     isError = true
                 }

@@ -35,4 +35,11 @@ class ServiceUsuario : IreUsuario {
     override fun obtenerUsuarioPorNombreUsuario(nombreUsuario: String): Usuario? {
         return UsuarioData.usuarios.find { it.nombreUsuario == nombreUsuario }
     }
+
+    override fun obtenerUsuarioPorNombreYApellido(nombre: String, apellido: String): Usuario? {
+        return UsuarioData.usuarios.find { 
+            it.nombre.equals(nombre, ignoreCase = true) && 
+            it.apellido.equals(apellido, ignoreCase = true) 
+        }
+    }
 }

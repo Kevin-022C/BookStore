@@ -6,5 +6,6 @@ data class Libros(
     val autor: String,
     val precio: Double,
     val descripcion: String,
+    val fechaPublicacion: String,
     val imagen: String
 )
