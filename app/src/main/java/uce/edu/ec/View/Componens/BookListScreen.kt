@@ -3,6 +3,9 @@ package uce.edu.ec.View.Componens
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -16,54 +19,88 @@ import uce.edu.ec.Model.Service.ServiceLibros
 @Composable
 fun BookListScreen(
     modifier: Modifier = Modifier,
-    onLogoutClick: () -> Unit = {}
+    userRole: String, // Recibimos el rol del usuario
+    onLogoutClick: () -> Unit = {},
+    onAddBookClick: () -> Unit = {} // Nuevo callback para ir a agregar libro
 ) {
     val serviceLibros = remember { ServiceLibros() }
-    // Pasamos el servicio de inventario a los items
     val serviceInventario = remember { ServiceInventario() }
     
+    // Usamos un estado que fuerce la recomposición al eliminar
     var libros by remember { mutableStateOf<List<Libros>>(emptyList()) }
+    // Estado para disparar la actualización
+    var refreshTrigger by remember { mutableStateOf(0) }
 
-    LaunchedEffect(Unit) {
+    // Función para recargar la lista
+    fun refreshLibros() {
         libros = serviceLibros.obtenerTodos()
     }
 
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .padding(16.dp)
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
-        ) {
-            Text(
-                text = "Catálogo de Libros",
-                style = MaterialTheme.typography.headlineMedium
-            )
-            TextButton(onClick = onLogoutClick) {
-                Text("Cerrar Sesión")
+    LaunchedEffect(refreshTrigger) {
+        refreshLibros()
+    }
+
+    Scaffold(
+        modifier = modifier,
+        floatingActionButton = {
+            // Solo mostramos el botón si es ADMIN
+            if (userRole == "ADMIN") {
+                FloatingActionButton(onClick = onAddBookClick) {
+                    Icon(Icons.Default.Add, contentDescription = "Agregar Libro")
+                }
             }
         }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) { innerPadding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+                .padding(16.dp)
         ) {
-            items(libros) { libro ->
-                // Obtenemos el stock específico para este libro
-                val stock = serviceInventario.obtenerStock(libro.titulo)
-                BookItem(libro = libro, stock = stock)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Catálogo de Libros",
+                    style = MaterialTheme.typography.headlineMedium
+                )
+                TextButton(onClick = onLogoutClick) {
+                    Text("Cerrar Sesión")
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                items(libros) { libro ->
+                    val stock = serviceInventario.obtenerStock(libro.titulo)
+                    BookItem(
+                        libro = libro, 
+                        stock = stock,
+                        isAdmin = userRole == "ADMIN",
+                        onDeleteClick = {
+                            serviceLibros.delete(libro)
+                            refreshTrigger++ // Forzar recarga de la lista
+                        }
+                    )
+                }
             }
         }
     }
 }
 
 @Composable
-fun BookItem(libro: Libros, stock: Int) {
+fun BookItem(
+    libro: Libros, 
+    stock: Int, 
+    isAdmin: Boolean = false,
+    onDeleteClick: () -> Unit = {}
+) {
     Card(
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
         modifier = Modifier.fillMaxWidth()
@@ -73,21 +110,41 @@ fun BookItem(libro: Libros, stock: Int) {
                 .padding(16.dp)
                 .fillMaxWidth()
         ) {
-            Text(
-                text = libro.titulo,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = "Autor: ${libro.autor}",
-                style = MaterialTheme.typography.bodyMedium
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = "Año de publicacion: ${libro.fechaPublicacion}",
-                style = MaterialTheme.typography.bodyMedium
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = androidx.compose.ui.Alignment.Top
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = libro.titulo,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "Autor: ${libro.autor}",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "Fecha de publicación: ${libro.fechaPublicacion}",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
+                
+                // Botón de eliminar visible solo para ADMIN
+                if (isAdmin) {
+                    IconButton(onClick = onDeleteClick) {
+                        Icon(
+                            imageVector = Icons.Default.Delete,
+                            contentDescription = "Eliminar libro",
+                            tint = MaterialTheme.colorScheme.error
+                        )
+                    }
+                }
+            }
+            
             Spacer(modifier = Modifier.height(4.dp))
             Text(
                 text = libro.descripcion,
@@ -107,12 +164,11 @@ fun BookItem(libro: Libros, stock: Int) {
                     fontWeight = FontWeight.Bold
                 )
                 
-                // Mostrar disponibilidad
                 if (stock > 0) {
                     Text(
                         text = "Disponible: $stock",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = Color(0xFF4CAF50) // Verde
+                        color = Color(0xFF4CAF50)
                     )
                 } else {
                     Text(

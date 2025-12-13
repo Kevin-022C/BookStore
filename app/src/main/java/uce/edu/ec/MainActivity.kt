@@ -10,6 +10,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import uce.edu.ec.Model.Service.ServiceUsuario
+import uce.edu.ec.View.ComponesA.AddBookScreen
 import uce.edu.ec.View.Componens.BookListScreen
 import uce.edu.ec.View.Componens.LoginUser
 import uce.edu.ec.View.Componens.RegisterUser
@@ -21,20 +23,29 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             BookStoreTheme {
-                // Estado simple para controlar la navegación: "login", "register", "bookList"
+                // Estado simple para controlar la navegación: "login", "register", "bookList", "addBook"
                 var currentScreen by remember { mutableStateOf("login") }
-                // Estado para almacenar el nombre del usuario logueado (opcional, para bienvenida)
-                var loggedUser by remember { mutableStateOf("") }
+                
+                // Estado para almacenar datos del usuario logueado
+                var loggedUserRole by remember { mutableStateOf("") }
+                var loggedUserName by remember { mutableStateOf("") }
+                
+                val serviceUsuario = remember { ServiceUsuario() }
 
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
                     when (currentScreen) {
                         "login" -> {
                             LoginUser(
                                 modifier = Modifier.padding(innerPadding),
-                                onLoginClick = { username, _ ->
-                                    loggedUser = username
-                                    Toast.makeText(this, "Bienvenido: $username", Toast.LENGTH_SHORT).show()
-                                    currentScreen = "bookList" // Navegar a la lista de libros
+                                onLoginClick = { nombre, apellido ->
+                                    // Buscar usuario para obtener su rol
+                                    val usuario = serviceUsuario.obtenerUsuarioPorNombreYApellido(nombre, apellido)
+                                    if (usuario != null) {
+                                        loggedUserRole = usuario.rol
+                                        loggedUserName = usuario.nombreUsuario
+                                        Toast.makeText(this, "Bienvenido: ${usuario.nombre} (${usuario.rol})", Toast.LENGTH_SHORT).show()
+                                        currentScreen = "bookList"
+                                    }
                                 },
                                 onRegisterClick = {
                                     currentScreen = "register"
@@ -55,9 +66,25 @@ class MainActivity : ComponentActivity() {
                         "bookList" -> {
                             BookListScreen(
                                 modifier = Modifier.padding(innerPadding),
+                                userRole = loggedUserRole, // Pasamos el rol
                                 onLogoutClick = {
                                     currentScreen = "login"
-                                    loggedUser = ""
+                                    loggedUserRole = ""
+                                    loggedUserName = ""
+                                },
+                                onAddBookClick = {
+                                    currentScreen = "addBook"
+                                }
+                            )
+                        }
+                        "addBook" -> {
+                            AddBookScreen(
+                                modifier = Modifier.padding(innerPadding),
+                                onBookAdded = {
+                                    currentScreen = "bookList" // Volver a la lista tras guardar
+                                },
+                                onCancelClick = {
+                                    currentScreen = "bookList"
                                 }
                             )
                         }
